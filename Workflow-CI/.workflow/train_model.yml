@@ -1,0 +1,34 @@
+name: Train Model
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  train-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          activate-environment: crop-recommendation-env
+          environment-file: MLProject/conda.yaml
+          auto-activate-base: false
+
+      - name: Run MLflow Project
+        shell: bash -l {0}
+        run: |
+          cd MLProject
+          mlflow run . --no-conda
