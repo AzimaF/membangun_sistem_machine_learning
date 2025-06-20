@@ -27,8 +27,13 @@ jobs:
           environment-file: MLProject/conda.yaml
           auto-activate-base: false
 
+      - name: Install Dependencies
+        run: |
+          pip install mlflow scikit-learn pandas joblib
+          
       - name: Run MLflow Project
         shell: bash -l {0}
         run: |
           cd MLProject
           mlflow run . --no-conda
+
