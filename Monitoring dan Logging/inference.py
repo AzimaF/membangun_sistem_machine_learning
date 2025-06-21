@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify
 import mlflow.sklearn
 import pandas as pd
 import time
+import joblib
 
 # Inisialisasi Flask app
 app = Flask(__name__)
 
-# Load model Random Forest dari direktori artefak MLflow
-model = mlflow.sklearn.load_model("MLProject/random_forest_model")
+# simpan model di MLflow
+model = joblib.load("MLProject/models/random_forest_model.pkl")
 
 # Hitung dan cetak latency tiap request
 @app.before_request
