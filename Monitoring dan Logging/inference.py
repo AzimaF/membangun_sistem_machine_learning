@@ -8,7 +8,7 @@ import joblib
 app = Flask(__name__)
 
 # simpan model di MLflow
-model = joblib.load("MLProject/models/random_forest_model.pkl")
+model = joblib.load("models/random_forest_model.pkl")
 
 # Hitung dan cetak latency tiap request
 @app.before_request
