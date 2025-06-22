@@ -13,4 +13,4 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Jalankan script MLflow
-ENTRYPOINT ["python", "modelling.py"]
+CMD ["python", "modelling.py"]
