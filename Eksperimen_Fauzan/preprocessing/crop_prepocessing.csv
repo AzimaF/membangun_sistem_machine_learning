@@ -1,0 +1,2 @@
+N,P,K,temperature,humidity,ph,rainfall,predicted_crop
+20.0,43.0,45.0,60.0,54.0,6.5,100.7,mango
