@@ -10,6 +10,7 @@ COPY . .
 # Install dependensi
 RUN pip install --upgrade pip && \
     pip install mlflow scikit-learn pandas numpy dagshub
+    pip install --no-cache-dir -r requirements.txt
 
 # Jalankan script MLflow
 ENTRYPOINT ["python", "modelling.py"]
