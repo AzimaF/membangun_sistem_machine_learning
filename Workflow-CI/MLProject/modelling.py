@@ -10,6 +10,10 @@ import mlflow
 import mlflow.sklearn
 import os
 import joblib
+import time
+
+# Prometheus
+from prometheus_client import start_http_server, Counter
 
 # 1. Set up MLflow tracking ke DagsHub
 os.environ["MLFLOW_TRACKING_URI"] = "https://dagshub.com/AzimaF/membangun_sistem_machine_learning.mlflow"
@@ -63,3 +67,16 @@ with mlflow.start_run():
 
     print(f"✅ Model trained successfully.")
     print(f"🎯 Test Accuracy: {test_acc:.4f} | Test F1-Score: {test_f1:.4f}")
+
+# 5. Tambahkan endpoint monitoring Prometheus
+REQUEST_COUNT = Counter('model_requests_total', 'Total model training requests')
+
+if __name__ == "__main__":
+    # Mulai Prometheus metrics server di port 8000
+    start_http_server(8000)
+    REQUEST_COUNT.inc()
+    print("🚀 Prometheus metrics available at :8000/metrics")
+
+    # Agar container tetap hidup dan Prometheus bisa terus scrape
+    while True:
+        time.sleep(60)
