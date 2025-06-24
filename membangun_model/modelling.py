@@ -36,6 +36,8 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 # 3. Inisialisasi model
 model = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=42)
 
+mlflow.sklearn.autolog()
+
 # 4. Logging ke MLflow
 with mlflow.start_run():
     model.fit(X_train, y_train)
