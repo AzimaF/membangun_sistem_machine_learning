@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  model-api:
+    image: fazima/sml_submission:latest   # GANTI sesuai nama Docker image kamu
+    container_name: model-api
+    ports:
+      - "5001:8080"  # Akses model dari localhost:5001
+    networks:
+      - monitoring-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Akses Prometheus dari localhost:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"  # Akses Grafana dari localhost:3000
+    networks:
+      - monitoring-net
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  prometheus-exporter:
+    build:
+      context: .                      # Folder project kamu (harus ada Dockerfile)
+      dockerfile: Dockerfile         # Pastikan Dockerfile bisa expose port 8000
+    container_name: prometheus-exporter
+    ports:
+      - "8000:8000"                  # Akses metrics Prometheus Exporter
+    networks:
+      - monitoring-net
+
+networks:
+  monitoring-net:
+
+volumes:
+  grafana-data:
