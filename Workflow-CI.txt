@@ -1,1 +1,1 @@
-https://github.com/AzimaF/membangun_sistem_machine_learning/tree/main/Workflow-CI
+https://github.com/AzimaF/Workflow-CI/tree/main
