@@ -11,18 +11,63 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Install Conda and Create Env
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          activate-environment: crop-recommendation
+          environment-file: MLProject/conda.yaml
+          auto-activate-base: false
 
-      - name: Run model training script
+      - name: Install Python Dependencies
         run: |
-          python membangun_model.py
+          pip install mlflow scikit-learn pandas numpy joblib dagshub
+
+      - name: Run MLflow Project (Local Tracking)
+        shell: bash -l {0}
+        run: |
+          cd MLProject
+          export MLFLOW_TRACKING_URI=file:./mlruns
+          mlflow run . --no-conda
+
+      - name: Get Latest Run ID
+        run: |
+          cd MLProject
+          export MLFLOW_TRACKING_URI=file:./mlruns
+          run_id=$(ls -1t mlruns/0 | grep -E '^[a-f0-9]{32}$' | head -n 1)
+          echo "MLFLOW_RUN_ID=$run_id" >> $GITHUB_ENV
+
+  dockerize-model:
+    needs: train-model
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install MLflow
+        run: pip install mlflow
+
+      - name: Build Docker Image
+        run: |
+          cd MLProject
+          export MLFLOW_TRACKING_URI=file:./mlruns
+          mlflow models build-docker -m "runs:/${{ env.MLFLOW_RUN_ID }}/model" -n fazima/sml_submission
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push Docker Image
+        run: docker push fazima/sml_submission:latest
