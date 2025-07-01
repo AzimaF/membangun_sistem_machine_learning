@@ -1,14 +1,15 @@
+import os
 import pandas as pd
 import numpy as np
-import os
-import joblib
-
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import StandardScaler
-
 import mlflow
+import mlflow.sklearn
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix
+)
 
 # ============================
 # 🔐 MLflow DagsHub Tracking
@@ -23,7 +24,7 @@ mlflow.set_experiment("RandomForest_Tuning")
 # ============================
 # 📂 Load Dataset
 # ============================
-df = pd.read_csv("Crop_recommendation.csv")
+df = pd.read_csv("membangun_sistem_machine_learning-main/membangun_model/Crop_recommendation.csv")
 X = df.drop("label", axis=1)
 y = df["label"]
 
@@ -53,6 +54,7 @@ param_grid = {
 # 🚀 Training + Logging
 # ============================
 with mlflow.start_run():
+
     grid = GridSearchCV(
         estimator=RandomForestClassifier(),
         param_grid=param_grid,
@@ -65,33 +67,36 @@ with mlflow.start_run():
     best_model = grid.best_estimator_
     y_pred = best_model.predict(X_test)
 
-    # ========================
-    # 📊 Evaluation Metrics
-    # ========================
-    acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred, average='weighted')
-    rec = recall_score(y_test, y_pred, average='weighted')
+    # 📊 Metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    recall = recall_score(y_test, y_pred, average='weighted')
     f1 = f1_score(y_test, y_pred, average='weighted')
 
-    # ========================
-    # 📝 Log Params & Metrics
-    # ========================
+    # Confusion Matrix (gunakan argmax jika multiclass tidak bisa di-ravel)
+    try:
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+        specificity = tn / (tn + fp)
+        fpr = fp / (fp + tn)
+    except:
+        specificity = None
+        fpr = None
+
+    # 📝 Log ke MLflow
     mlflow.log_params(grid.best_params_)
-    mlflow.log_metric("accuracy", acc)
-    mlflow.log_metric("precision", prec)
-    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("accuracy", accuracy)
+    mlflow.log_metric("precision", precision)
+    mlflow.log_metric("recall", recall)
     mlflow.log_metric("f1_score", f1)
+    if specificity is not None:
+        mlflow.log_metric("specificity", specificity)
+        mlflow.log_metric("false_positive_rate", fpr)
 
-    # ========================
-    # 💾 Save & Log Model
-    # ========================
-    model_path = "best_random_forest_model.pkl"
-    joblib.dump(best_model, model_path)
-    mlflow.log_artifact(model_path)
+    # 💾 Log model ke folder 'random_forest_model'
+    mlflow.sklearn.log_model(best_model, "random_forest_model")
 
-    # ========================
     # ✅ Output Info
-    # ========================
-    print("✅ Model training & tuning selesai.")
-    print("Best Parameters:", grid.best_params_)
-    print(f"🎯 Accuracy: {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1-Score: {f1:.4f}")
+    print("✅ Model dilatih dan dicatat di MLflow (DagsHub).")
+    print(f"🎯 Accuracy: {accuracy:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f}")
+    if specificity is not None:
+        print(f"📈 Specificity: {specificity:.4f} | FPR: {fpr:.4f}")
