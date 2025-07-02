@@ -1,65 +1,36 @@
 import pandas as pd
 import numpy as np
 import os
-import time
-
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, f1_score
-
 import mlflow
 import mlflow.sklearn
 
-#from prometheus_client import start_http_server, Counter
-
-# 1. Konfigurasi MLflow ke DagsHub
-os.environ["MLFLOW_TRACKING_URI"] = "https://dagshub.com/AzimaF/membangun_sistem_machine_learning.mlflow"
-os.environ["MLFLOW_TRACKING_USERNAME"] = "AzimaF"
-os.environ["MLFLOW_TRACKING_PASSWORD"] = "a6fd2ef52a2527e3b4d345307141e1f2cf8e1182"
-
-mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
-mlflow.set_experiment("RandomForest_Classifier")
+# 1. Konfigurasi MLflow lokal
+mlflow.set_tracking_uri("http://127.0.0.1:5000")  # default local URI
+mlflow.set_experiment("RandomForest_Classifier_Local")
 
 # 2. Load dataset
 df = pd.read_csv("membangun_sistem_machine_learning-main/membangun_model/Crop_recommendation.csv")
 X = df.drop("label", axis=1)
 y = df["label"]
 
-# 3. Preprocessing (standarisasi)
+# 3. Preprocessing (StandardScaler)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
+# 4. Split data
 X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# 4. Inisialisasi model
-model = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=42)
-
 # 5. Aktifkan autolog
 mlflow.sklearn.autolog()
 
-# 6. Training dan logging
+# 6. Training dan logging otomatis
 with mlflow.start_run():
+    model = RandomForestClassifier(n_estimators=50, max_depth=15, random_state=42)
     model.fit(X_train, y_train)
 
-    y_train_pred = model.predict(X_train)
-    y_test_pred = model.predict(X_test)
-
-    train_acc = accuracy_score(y_train, y_train_pred)
-    test_acc = accuracy_score(y_test, y_test_pred)
-    train_f1 = f1_score(y_train, y_train_pred, average='weighted')
-    test_f1 = f1_score(y_test, y_test_pred, average='weighted')
-
-    mlflow.log_metric("train_accuracy", train_acc)
-    mlflow.log_metric("test_accuracy", test_acc)
-    mlflow.log_metric("train_f1_score", train_f1)
-    mlflow.log_metric("test_f1_score", test_f1)
-
-
-    print(f"✅ Model trained and logged successfully.")
-    print(f"🎯 Test Accuracy: {test_acc:.4f} | Test F1-Score: {test_f1:.4f}")
-
-
-
+    print("✅ Model trained and autologged successfully.")
